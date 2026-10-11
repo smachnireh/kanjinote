@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Кандзи — умный поиск</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&family=Playfair+Display:wght@700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f0e8;--card:#fffdf8;--accent:#1a4a2e;--gold:#c8963e;--text:#1c1c1c;--muted:#6b6b5e;--border:#e0d9cc;--hl:#fff3cd;--chip:rgba(26,74,46,.08);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111a14;--card:#1a261e;--accent:#2f7a4d;--gold:#e0b062;--text:#ece8dc;--muted:#a3a595;--border:#2e3d33;--hl:#5c4a1a;--chip:rgba(224,176,98,.12)}}
+:root[data-theme="dark"]{--bg:#111a14;--card:#1a261e;--accent:#2f7a4d;--gold:#e0b062;--text:#ece8dc;--muted:#a3a595;--border:#2e3d33;--hl:#5c4a1a;--chip:rgba(224,176,98,.12)}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',system-ui,sans-serif;min-height:100vh}
+.jp{font-family:'Noto Serif JP','Hiragino Mincho ProN','Yu Mincho',serif}
+header{background:#1a4a2e;color:#fff;padding:28px 20px 22px;text-align:center}
+header h1{font-family:'Playfair Display',Georgia,serif;font-size:26px}
+header p{font-size:13px;opacity:.7;margin-top:6px}
+.gl{width:60px;height:2px;background:#c8963e;margin:12px auto 0}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px}
+.sb{display:flex;align-items:center;background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:0 14px;margin-top:22px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.sb:focus-within{border-color:var(--accent)}
+.sb input{flex:1;border:0;outline:0;background:transparent;padding:14px 10px;font-size:16px;color:var(--text);font-family:inherit}
+.sb button{background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer;display:none}
+.hint{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.fb{border:1.5px solid var(--border);background:var(--card);color:var(--muted);border-radius:20px;padding:6px 13px;font-size:12.5px;font-weight:500;cursor:pointer;font-family:inherit}
+.fb.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.stats{font-size:12px;color:var(--muted);margin:16px 0 8px}
+.list{display:flex;flex-direction:column;gap:10px;margin-bottom:32px}
+.gh{background:#1a4a2e;color:#fff;border-radius:10px;padding:12px 16px;margin-top:8px;font-family:'Playfair Display',Georgia,serif;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+.gh small{font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#e8c87a;letter-spacing:.5px}
+.card{display:flex;gap:16px;align-items:center;background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:.15s}
+.card:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:0 3px 14px rgba(26,74,46,.12)}
+.big{font-size:52px;line-height:1;min-width:68px;text-align:center;color:var(--accent)}
+:root:not([data-theme="light"]) .big{color:var(--gold)}
+@media(prefers-color-scheme:light){.big{color:var(--accent)}}
+.info{flex:1;min-width:0}
+.tr{font-size:16px;font-weight:600;line-height:1.35;margin-bottom:6px}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}
+.lb{font-size:10.5px;font-weight:600;letter-spacing:.8px;color:#fff;background:var(--gold);border-radius:4px;padding:2px 6px;min-width:34px;text-align:center}
+.lb.on{background:var(--accent)}
+.chip{background:var(--chip);border-radius:8px;padding:3px 9px;font-size:14px;display:inline-flex;gap:6px;align-items:baseline}
+.chip i{font-style:normal;font-size:12px;color:var(--muted)}
+.chip.hit{background:var(--hl)}
+mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 2px}
+.none{text-align:center;color:var(--muted);padding:50px 10px}
+.ov{display:none;position:fixed;inset:0;background:rgba(10,28,18,.65);backdrop-filter:blur(4px);z-index:50;align-items:center;justify-content:center;padding:16px}
+.ov.open{display:flex}
+.md{background:var(--card);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column}
+.mh{background:#1a4a2e;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:1px;text-transform:uppercase}
+.mh button{background:rgba(255,255,255,.15);border:0;color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:15px}
+.mb{padding:22px 20px;overflow-y:auto;text-align:center}
+.mk{font-size:120px;line-height:1.1;color:var(--accent)}
+:root:not([data-theme="light"]) .mk{color:var(--gold)}
+@media(prefers-color-scheme:light){.mk{color:var(--accent)}}
+.mt{font-size:20px;font-weight:600;margin:6px 0 16px}
+.mb .row{justify-content:center;margin:10px 0}
+.mb .chip{font-size:20px}.mb .chip i{font-size:14px}
+.mn{margin-top:16px;text-align:left;font-size:14px;line-height:1.7;padding:12px 14px;background:var(--chip);border-left:3px solid var(--gold);border-radius:0 8px 8px 0}
+.mf{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--border);background:var(--bg)}
+.mf button{background:var(--card);border:1.5px solid var(--border);color:var(--text);border-radius:8px;padding:8px 14px;font-size:13px;font-family:inherit;cursor:pointer}
+.mf button:disabled{opacity:.35}
+.mf span{flex:1;text-align:center;font-size:12px;color:var(--muted)}
+@media(max-width:480px){.big{font-size:42px;min-width:54px}.card{gap:12px;padding:12px}}
+.tabs{display:flex;gap:8px;margin-top:20px}.tb{flex:1;padding:11px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--muted);font:600 14px inherit;font-family:inherit;cursor:pointer}.tb.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.qbox{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:18px;margin:18px 0 32px}.qbox h2{font-size:14px;margin:4px 0 2px;color:var(--muted);font-weight:600}
+.go{margin-top:18px;width:100%;padding:13px;border:0;border-radius:10px;background:var(--gold);color:#1c1c1c;font:600 16px 'IBM Plex Sans',sans-serif;cursor:pointer}
+.bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin:8px 0 14px}.bar div{height:100%;background:var(--gold);transition:.3s}
+.qk{text-align:center;font-size:96px;line-height:1.15;color:var(--accent)}@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .qk{color:var(--gold)}}
+.qp{text-align:center;color:var(--muted);font-size:14px;margin:4px 0 14px}
+.opt{display:block;width:100%;text-align:left;margin-top:8px;padding:13px 16px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);color:var(--text);font:500 16px 'IBM Plex Sans',sans-serif;cursor:pointer}
+.opt i{font-style:normal;color:var(--muted);margin-left:8px;font-size:13px}.opt:not(:disabled):hover{border-color:var(--accent)}
+.opt.ok{background:#2e7d4f;border-color:#2e7d4f;color:#fff}.opt.ok i{color:#e6f4ea}.opt.bad{background:#a83a3a;border-color:#a83a3a;color:#fff}.opt.bad i{color:#fde0e0}
+.fb{margin-top:14px;padding:12px 14px;border-radius:10px;background:var(--chip);font-size:14px;line-height:1.6}.fb b{font-size:16px}
+</style></head><body>
+<header><h1>Кандзи · уроки 1–10</h1><p>Умный поиск по иероглифам, чтениям он/кун и переводу</p><div class="gl"></div></header>
+<div class="wrap"><div class="tabs"><button class="tb on" data-t="d">📖 Словарь</button><button class="tb" data-t="q">🎓 Учить</button></div>
+<div id="dict">
+<div class="sb"><input id="q" type="text" placeholder="Перевод, чтение (хи, ка, ひ, hi) или иероглиф…" autocomplete="off"><button id="x">✕</button></div>
+<div class="hint">Пишите по-русски: «хи» найдёт иероглифы, у которых перевод или любое чтение (кун/он) начинается с «хи». Работает и хирагана/катакана, и латиница.</div>
+<div class="filters" id="f"></div>
+<div class="stats" id="st"></div>
+<div class="list" id="ls"></div>
+</div><div id="quiz" style="display:none"></div></div>
+<div class="ov" id="ov"><div class="md"><div class="mh"><span id="mc"></span><button id="mx">✕</button></div><div class="mb" id="mb"></div><div class="mf"><button id="mp">← Пред.</button><span id="mn"></span><button id="mnx">След. →</button></div></div></div>
+<script>
+const RAW=`火|ひ|カ|огонь
+水|みず|スイ|вода
+金|かね|キン|золото, деньги, металл
+土|つち|ド|земля
+子|こ|シ|ребёнок
+女|おんな|ジョ|женщина
+学|まな-ぶ|ガク|учиться
+生|い-きる,う-まれる|セイ|жизнь, рождение
+先|さき|セン|впереди, предыдущий
+一|ひと-つ|イチ|один
+二|ふた-つ|ニ|два
+三|みっ-つ|サン|три
+四|よっ-つ|シ|четыре
+五|いつ-つ|ゴ|пять
+六|むっ-つ|ロク|шесть
+七|なな-つ|シチ|семь
+八|やっ-つ|ハチ|восемь
+九|ここの-つ|キュウ,ク|девять
+十|とお|ジュウ|десять
+円||エン|иена, круг
+年|とし|ネン|год, возраст
+上|うえ|ジョウ|верх
+下|した|ゲ|низ
+中|なか|チュウ|середина
+大|おお-きい|ダイ|большой
+小|ちい-さい|ショウ|маленький
+本|もと|ホン|книга, основа, источник
+半|なか-ば|ハン|половина
+分|わ-ける|フン,ブン|доля, минута, процент
+力|ちから|リョク|сила
+明|あか-るい|メイ|светлый|солнце и луна оба «светлые»
+休|やす-む|キュウ|отдых|человек, прислонившись к дереву, «отдыхает»
+体|からだ|タイ|тело|основа человека — это «тело»
+好|す-き|コウ|нравиться, любить|женщина «любит» своего ребёнка
+男|おとこ|ダン|мужчина|использующий силу на рисовом поле — «мужчина»
+林|はやし|リン|лес, роща|два дерева — это «лес»
+森|もり|シン|лес|а три дерева — это уж точно «лес»
+間|あいだ|カン|между|солнце видно «между» дверями ворот
+畑|はたけ||поле (обработанное)|сожги обычное поле и получи «поле обработанное»
+岩|いわ|ガン|скала, утёс|гора из камня — это «скала»
+目|め|モク|глаз
+耳|みみ|ジ|ухо
+手|て|シュ|рука
+足|あし|ソク|нога
+雨|あめ|ウ|дождь
+竹|たけ|チク|бамбук
+米|こめ|マイ,ベイ|рис, Америка
+貝|かい|バイ|раковина
+石|いし|セキ|камень
+糸|いと|シ|нить
+花|はな|カ|цветок
+茶||チャ,サ|чай
+肉||ニク|мясо
+文|ふみ|ブン,モン|литература
+字||ジ|иероглиф
+物|もの|ブツ,モツ|вещь
+牛|うし|ギュウ|корова
+馬|うま|バ|лошадь
+鳥|とり|チョウ|птица
+魚|さかな,うお|ギョ|рыба
+新|あたら-しい|シン|новый
+古|ふる-い|コ|старый
+長|なが-い|チョウ|длинный
+短|みじか-い|タン|короткий
+高|たか-い|コウ|высокий, дорогой
+安|やす-い|アン|дешёвый
+低|ひく-い|テイ|низкий
+暗|くら-い|アン|тёмный
+多|おお-い|タ|много
+少|すく-ない,すこ-し|ショウ|мало
+行|い-く,おこな-う|コウ,ギョウ|идти, совершать
+来|く-る,こ-ない,き-ます|ライ|приходить
+帰|かえ-る|キ|возвращаться
+食|た-べる|ショク|есть, еда
+飲|の-む|イン|пить
+見|み-る,み-える,み-せる|ケン|видеть, смотреть
+聞|き-く,き-こえる|ブン|слышать
+読|よ-む|ドク|читать
+書|か-く|ショ|писать
+話|はな-す|ワ|говорить
+買|か-う|バイ|покупать
+教|おし-える|キョウ|учить, обучать
+朝|あさ|チョウ|утро
+昼|ひる|チュウ|дневное время
+夜|よる,よ|ヤ|ночь
+晩||バン|вечер
+夕|ゆう|セキ|вечер
+方|かた,-がた|ホウ|направление
+午||ゴ|полдень
+前|まえ|ゼン|перед
+後|あと,のち,うし-ろ|ゴ,コウ|после, позади
+毎||マイ|каждый
+週||シュウ|неделя`;
+const M={};"あ:а:a,い:и:i,う:у:u,え:э:e,お:о:o,か:ка:ka,き:ки:ki,く:ку:ku,け:кэ:ke,こ:ко:ko,さ:са:sa,し:си:shi,す:су:su,せ:сэ:se,そ:со:so,た:та:ta,ち:ти:chi,つ:цу:tsu,て:тэ:te,と:то:to,な:на:na,に:ни:ni,ぬ:ну:nu,ね:нэ:ne,の:но:no,は:ха:ha,ひ:хи:hi,ふ:ху:fu,へ:хэ:he,ほ:хо:ho,ま:ма:ma,み:ми:mi,む:му:mu,め:мэ:me,も:мо:mo,や:я:ya,ゆ:ю:yu,よ:ё:yo,ら:ра:ra,り:ри:ri,る:ру:ru,れ:рэ:re,ろ:ро:ro,わ:ва:wa,を:о:o,ん:н:n,が:га:ga,ぎ:ги:gi,ぐ:гу:gu,げ:гэ:ge,ご:го:go,ざ:дза:za,じ:дзи:ji,ず:дзу:zu,ぜ:дзэ:ze,ぞ:дзо:zo,だ:да:da,で:дэ:de,ど:до:do,ば:ба:ba,び:би:bi,ぶ:бу:bu,べ:бэ:be,ぼ:бо:bo,ぱ:па:pa,ぴ:пи:pi,ぷ:пу:pu,ぺ:пэ:pe,ぽ:по:po".split(',').forEach(s=>{const p=s.split(':');M[p[0]]=[p[1],p[2]]});
+const hira=s=>s.replace(/[\u30A1-\u30F6]/g,c=>String.fromCharCode(c.charCodeAt(0)-96));
+const clean=s=>s.replace(/[-·・\s()（）]/g,'');
+function conv(s){s=hira(clean(s));let c='',l='',dbl=false;for(let i=0;i<s.length;i++){const ch=s[i];if(ch==='っ'){dbl=true;continue}const b=M[ch];if(!b)continue;let a=b[0],r=b[1];const nx=s[i+1],y=nx?'ゃゅょ'.indexOf(nx):-1;if(y>=0){a=a.slice(0,-1)+['я','ю','ё'][y];r=['shi','chi','ji'].includes(r)?r.slice(0,-1)+'auo'[y]:r.slice(0,-1)+'y'+'auo'[y];i++}if(dbl){a=a[0]+a;r=r[0]+r;dbl=false}c+=a;l+=r}return [c,l]}
+const rd=s=>{const h=hira(clean(s)),[c,l]=conv(s);return{k:s.replace(/(.)-/g,'$1·'),h,c,l}};
+const E=RAW.split('\n').map((ln,i)=>{const p=ln.split('|');return{k:p[0],kun:p[1]?p[1].split(',').map(rd):[],on:p[2]?p[2].split(',').map(rd):[],tr:p[3],mn:p[4]||'',i,L:Math.floor(i/10)+1}});
+const CATS=[['all','Всё'],...Array.from({length:10},(_,i)=>[String(i+1),'Урок '+(i+1)])];
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const rx=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+let cat='all',cur=[],mi=0;
+function rank(e,q){if(!q)return 0;const qc=clean(q.toLowerCase()),qh=hira(qc);if(!qc)return 0;
+ if(e.k===q.trim())return 0;let best=9;
+ for(const r of [...e.kun,...e.on]){if(r.c===qc||r.l===qc||r.h===qh)best=Math.min(best,0);else if(r.c.startsWith(qc)||r.l.startsWith(qc)||r.h.startsWith(qh))best=Math.min(best,1)}
+ const tl=e.tr.toLowerCase();for(const w of tl.split(/[\s,;()«»"]+/)){if(w===qc)best=Math.min(best,0);else if(w.startsWith(qc))best=Math.min(best,1)}
+ if(best>2&&qc.length>=3&&tl.includes(qc))best=2;
+ if(best>3&&qc.length>=3&&e.mn.toLowerCase().includes(qc))best=3;
+ return best>3?-1:best}
+function chip(r,qc,qh,big){const hit=qc&&(r.c.startsWith(qc)||r.l.startsWith(qc)||r.h.startsWith(qh));return `<span class="chip jp${hit?' hit':''}">${r.k}<i>${r.c}</i></span>`}
+function card(e,q){const qc=clean(q.toLowerCase()),qh=hira(qc);
+ const tr=q?esc(e.tr).replace(new RegExp('(^|[\\s,(«])('+rx(esc(q.trim()))+')','gi'),'$1<mark>$2</mark>'):esc(e.tr);
+ return `<div class="card" data-i="${e.i}"><div class="big jp">${e.k}</div><div class="info"><div class="tr">${tr}</div>`+
+ (e.kun.length?`<div class="row"><span class="lb">КУН</span>${e.kun.map(r=>chip(r,qc,qh)).join('')}</div>`:'')+
+ (e.on.length?`<div class="row"><span class="lb on">ОН</span>${e.on.map(r=>chip(r,qc,qh)).join('')}</div>`:'')+`</div></div>`}
+function render(){const q=document.getElementById('q').value,ls=document.getElementById('ls');
+ let a=E.filter(e=>cat==='all'||e.L==cat).map(e=>({e,r:rank(e,q)})).filter(x=>x.r>=0);
+ if(q)a.sort((x,y)=>x.r-y.r||x.e.i-y.e.i);
+ cur=a.map(x=>x.e);
+ document.getElementById('st').textContent=cur.length?`Найдено иероглифов: ${cur.length}`:'';
+ if(!cur.length){ls.innerHTML=`<div class="none"><div style="font-size:38px">🔍</div><p>Ничего не найдено по запросу «${esc(q)}»</p></div>`;return}
+ let h='',last='';
+ cur.forEach(e=>{if(!q&&e.L!==last){last=e.L;h+=`<div class="gh">Урок ${e.L}<small>${E.filter(x=>x.L===e.L).length} КАНДЗИ</small></div>`}h+=card(e,q)});
+ ls.innerHTML=h}
+function modal(){const e=cur[mi];
+ document.getElementById('mc').textContent='Урок '+e.L;
+ const row=(l,c,a)=>a.length?`<div class="row"><span class="lb ${c}">${l}</span>${a.map(r=>`<span class="chip jp">${r.k}<i>${r.c} · ${r.l}</i></span>`).join('')}</div>`:'';
+ document.getElementById('mb').innerHTML=`<div class="mk jp">${e.k}</div><div class="mt">${esc(e.tr)}</div>${row('КУН','',e.kun)}${row('ОН','on',e.on)}${e.mn?`<div class="mn">💡 ${esc(e.mn)}</div>`:''}`;
+ document.getElementById('mn').textContent=`${mi+1} / ${cur.length}`;
+ document.getElementById('mp').disabled=mi===0;document.getElementById('mnx').disabled=mi===cur.length-1}
+const $=id=>document.getElementById(id),inp=$('q');
+$('f').innerHTML=CATS.map(c=>`<button class="fb${c[0]==='all'?' on':''}" data-c="${c[0]}">${c[1]}</button>`).join('');
+$('f').onclick=ev=>{const b=ev.target.closest('.fb');if(!b)return;cat=b.dataset.c;document.querySelectorAll('.fb').forEach(x=>x.classList.toggle('on',x===b));render()};
+inp.oninput=()=>{$('x').style.display=inp.value?'block':'none';render()};
+$('x').onclick=()=>{inp.value='';$('x').style.display='none';render();inp.focus()};
+$('ls').onclick=ev=>{const c=ev.target.closest('.card');if(!c)return;mi=cur.findIndex(e=>e.i==c.dataset.i);modal();$('ov').classList.add('open')};
+const close=()=>$('ov').classList.remove('open');
+$('mx').onclick=close;$('ov').onclick=ev=>{if(ev.target===$('ov'))close()};
+$('mp').onclick=()=>{if(mi>0){mi--;modal()}};$('mnx').onclick=()=>{if(mi<cur.length-1){mi++;modal()}};
+document.onkeydown=ev=>{if(!$('ov').classList.contains('open'))return;if(ev.key==='Escape')close();if(ev.key==='ArrowLeft'&&mi>0){mi--;modal()}if(ev.key==='ArrowRight'&&mi<cur.length-1){mi++;modal()}};
+
+const sh=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const lab=r=>`<span class="jp">${r.k}</span><i>${r.c}</i>`;
+const rl=a=>a.map(r=>r.k+' ('+r.c+')').join(', ')||'—';
+let qs={l:'1',m:'mix'},Q=null;
+document.querySelectorAll('.tb').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tb').forEach(x=>x.classList.toggle('on',x===b));const q=b.dataset.t==='q';$('dict').style.display=q?'none':'';$('quiz').style.display=q?'':'none';if(q&&!Q)setup()});
+function setup(){Q=null;const LS=[...Array.from({length:10},(_,i)=>[String(i+1),'Урок '+(i+1)]),['all','Все (20 случайных)']],MS=[['tr','Перевод'],['kun','Кун-чтение'],['on','Он-чтение'],['mix','Всё вместе']];
+ const ch=(a,k)=>a.map(x=>`<button class="fb${qs[k]===x[0]?' on':''}" data-k="${k}" data-v="${x[0]}">${x[1]}</button>`).join('');
+ $('quiz').innerHTML=`<div class="qbox"><h2>Урок</h2><div class="filters">${ch(LS,'l')}</div><h2 style="margin-top:16px">Что учим</h2><div class="filters">${ch(MS,'m')}</div><button class="go" id="go">Начать тест</button><p class="hint">Уроки идут по порядку иероглифов из PDF, по 10 в каждом. Ответ показывается сразу после выбора.</p></div>`;
+ $('quiz').onclick=ev=>{const b=ev.target.closest('.fb');if(b){qs[b.dataset.k]=b.dataset.v;setup()}if(ev.target.id==='go')start(qs.l==='all'?sh(E).slice(0,20):sh(E.filter(e=>e.L==qs.l)))}}
+function mk(e,m){if(m==='mix')m=['tr','kun','on'][Math.random()*3|0];if(m!=='tr'&&!e[m].length)m='tr';let ok,opts;
+ if(m==='tr'){ok={t:e.tr,h:e.tr};opts=sh(E.filter(x=>x.tr!==e.tr)).slice(0,3).map(x=>({t:x.tr,h:x.tr}))}
+ else{const r=sh(e[m])[0],own=new Set(e[m].map(x=>x.h));ok={t:lab(r),h:r.h};const seen=new Set(own);opts=[];for(const x of sh(E.filter(x=>x!==e).flatMap(x=>x[m])))if(!seen.has(x.h)){seen.add(x.h);opts.push({t:lab(x),h:x.h});if(opts.length>=3)break}}
+ return{e,m,ok,opts:sh([ok,...opts])}}
+function start(pool){Q={q:pool.map(e=>mk(e,qs.m)),i:0,s:0,w:[]};ask()}
+function ask(){const x=Q.q[Q.i],n=Q.q.length,P={tr:'Что означает иероглиф?',kun:'Выберите кун-чтение (хирагана)',on:'Выберите он-чтение (катакана)'}[x.m];
+ $('quiz').innerHTML=`<div class="qbox"><div class="hint">Вопрос ${Q.i+1} из ${n} · верно: ${Q.s}</div><div class="bar"><div style="width:${Q.i/n*100}%"></div></div><div class="qk jp">${x.e.k}</div><div class="qp">${P}</div><div id="os">${x.opts.map((o,i)=>`<button class="opt" data-i="${i}">${o.t}</button>`).join('')}</div><div id="fb"></div></div>`;
+ $('os').onclick=ev=>{const b=ev.target.closest('.opt');if(!b||b.disabled)return;const o=x.opts[b.dataset.i],good=o.h===x.ok.h;
+  $('os').querySelectorAll('.opt').forEach((p,i)=>{p.disabled=true;if(x.opts[i].h===x.ok.h)p.classList.add('ok')});
+  if(good)Q.s++;else{b.classList.add('bad');Q.w.push(x.e)}
+  const e=x.e,last=Q.i===n-1;
+  $('fb').innerHTML=`<div class="fb"><b>${good?'✅ Верно!':'❌ Неверно'}</b><br><span class="jp">${e.k}</span> — ${esc(e.tr)}<br>Кун: <span class="jp">${rl(e.kun)}</span><br>Он: <span class="jp">${rl(e.on)}</span></div><button class="go" id="nx">${last?'Результат':'Далее →'}</button>`;
+  $('nx').onclick=()=>{Q.i++;Q.i<n?ask():done()}}}
+function done(){const n=Q.q.length,p=Math.round(Q.s/n*100);
+ $('quiz').innerHTML=`<div class="qbox" style="text-align:center"><div style="font-size:44px">${p>=80?'🎉':p>=50?'👍':'💪'}</div><div class="mt">${Q.s} из ${n} (${p}%)</div>${Q.w.length?`<div class="hint">Ошибки:</div><div class="row" style="justify-content:center">${Q.w.map(e=>`<span class="chip jp">${e.k}<i>${esc(e.tr)}</i></span>`).join('')}</div>`:'<div class="hint">Без ошибок!</div>'}${Q.w.length?'<button class="go" id="rp">Повторить ошибки</button>':''}<button class="go" id="bk" style="background:var(--accent);color:#fff">К выбору урока</button></div>`;
+ if($('rp'))$('rp').onclick=()=>start(sh(Q.w));$('bk').onclick=setup}
+render();
+</script></body></html>
